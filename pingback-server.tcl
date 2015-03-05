@@ -45,6 +45,21 @@ proc /pingback {state} {
     ::wibble::sendresponse $response
 }
 
+proc /pingbacks {state} {
+    set method [dict get $state request method]
+    if {$method ne "GET"} {
+        dict set response status 405
+        dict set response header content-type text/html\;\ charset=UTF-8
+        dict set response content "<h1>Invalid method</h1><p>Use HTTP GET</p>"
+    } else {
+        dict set response status 200
+        dict set response header content-type text/html\;\ charset=UTF-8
+        set result [::db eval {select * from pingbacks;}]
+        dict set response content <ul>[join [lmap {source target} $result {set s "<li><a href=\"$source\">$source</a> links to <a href=\"$target\">$target</a></li>"}]]</ul>
+    }
+    ::wibble::sendresponse $response
+}
+
 # Demonstrate Wibble if being run directly.
 if {$argv0 eq [info script]} {
     # Guess the root directory.
@@ -53,6 +68,7 @@ if {$argv0 eq [info script]} {
     # Define zone handlers.
     ::wibble::handle /vars vars
     ::wibble::handle /pingback /pingback
+    ::wibble::handle /pingbacks /pingbacks
     ::wibble::handle / dirslash root $root
     # ::wibble::handle / indexfile root $root indexfile index.html
     # ::wibble::handle / static root $root
